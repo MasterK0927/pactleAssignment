@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Quote } from '../App';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { CheckCircle, AlertTriangle, Clock, FileText, Calendar, BarChart3, TrendingUp } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Clock, FileText, Calendar, BarChart3, TrendingUp, Eye, Download } from 'lucide-react';
+import { QuotePreview } from './quotes/QuotePreview';
 
 interface QuoteOutputProps {
   quote: Quote | null;
@@ -11,6 +12,7 @@ interface QuoteOutputProps {
 
 
 export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
+  const [showPreview, setShowPreview] = useState(false);
   if (loading) {
     return (
       <Card>
@@ -316,6 +318,82 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Action Buttons */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <FileText className="h-5 w-5" />
+            <span>Quote Actions</span>
+          </CardTitle>
+          <CardDescription>
+            Preview and export your quote in various formats
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setShowPreview(true)}
+              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Eye className="h-4 w-4" />
+              <span>Preview Quote</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                const token = localStorage.getItem('access_token');
+                window.open(`/api/quotes/${quote.quote_id}/pdf/enhanced?token=${token}`, '_blank');
+              }}
+              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download Enhanced PDF</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const token = localStorage.getItem('access_token');
+                window.open(`/api/quotes/${quote.quote_id}/export/csv?token=${token}`, '_blank');
+              }}
+              className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>Export CSV</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const token = localStorage.getItem('access_token');
+                window.open(`/api/quotes/${quote.quote_id}/explainability?token=${token}`, '_blank');
+              }}
+              className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span>Explainability Data</span>
+            </button>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Enhanced Features Available:</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Professional PDF with company branding and signature block</li>
+              <li>• Tax breakup by HSN codes with CGST/SGST/IGST details</li>
+              <li>• Processing explainability and confidence metrics</li>
+              <li>• Revision tracking and change history</li>
+              <li>• Multiple export formats (PDF, CSV, JSON)</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <QuotePreview
+          quoteId={quote.quote_id}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 };
