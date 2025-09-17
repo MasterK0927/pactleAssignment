@@ -1,0 +1,364 @@
+alias,sku_code,score_boost
+# Corrugated Flexible Pipe aliases
+corrugated,NFC16,0.3
+corrugated,NFC20,0.3
+corrugated,NFC25,0.3
+corrugated,NFC32,0.3
+corrugated,NFC40,0.3
+corrugated,NFC50,0.3
+flexible,NFC16,0.3
+flexible,NFC20,0.3
+flexible,NFC25,0.3
+flexible,NFC32,0.3
+flexible,NFC40,0.3
+flexible,NFC50,0.3
+flex,NFC16,0.3
+flex,NFC20,0.3
+flex,NFC25,0.3
+flex,NFC32,0.3
+flex,NFC40,0.3
+flex,NFC50,0.3
+cfp,NFC16,0.4
+cfp,NFC20,0.4
+cfp,NFC25,0.4
+cfp,NFC32,0.4
+cfp,NFC40,0.4
+cfp,NFC50,0.4
+pipe,NFC16,0.2
+pipe,NFC20,0.2
+pipe,NFC25,0.2
+pipe,NFC32,0.2
+pipe,NFC40,0.2
+pipe,NFC50,0.2
+corr,NFC16,0.3
+corr,NFC20,0.3
+corr,NFC25,0.3
+corr,NFC32,0.3
+corr,NFC40,0.3
+corr,NFC50,0.3
+# Size aliases for corrugated
+16mm,NFC16,0.5
+16,NFC16,0.5
+20mm,NFC20,0.5
+20,NFC20,0.5
+25mm,NFC25,0.5
+25,NFC25,0.5
+32mm,NFC32,0.5
+32,NFC32,0.5
+40mm,NFC40,0.5
+40,NFC40,0.5
+50mm,NFC50,0.5
+50,NFC50,0.5
+# Material aliases
+pp,NFC16,0.2
+pp,NFC20,0.2
+pp,NFC25,0.2
+pp,NFC32,0.2
+pp,NFC40,0.2
+pp,NFC50,0.2
+frpp,NFC16,0.3
+frpp,NFC20,0.3
+frpp,NFC25,0.3
+frpp,NFC32,0.3
+frpp,NFC40,0.3
+frpp,NFC50,0.3
+fr,NFC16,0.3
+fr,NFC20,0.3
+fr,NFC25,0.3
+fr,NFC32,0.3
+fr,NFC40,0.3
+fr,NFC50,0.3
+fr-pp,NFC16,0.3
+fr-pp,NFC20,0.3
+fr-pp,NFC25,0.3
+fr-pp,NFC32,0.3
+fr-pp,NFC40,0.3
+fr-pp,NFC50,0.3
+# PVC Conduit aliases
+pvc,PVC16L,0.3
+pvc,PVC20L,0.3
+pvc,PVC25L,0.3
+pvc,PVC32L,0.3
+pvc,PVC40L,0.3
+pvc,PVC50L,0.3
+pvc,PVC16M,0.3
+pvc,PVC20M,0.3
+pvc,PVC25M,0.3
+pvc,PVC32M,0.3
+pvc,PVC40M,0.3
+pvc,PVC50M,0.3
+pvc,PVC16H,0.3
+pvc,PVC20H,0.3
+pvc,PVC25H,0.3
+pvc,PVC32H,0.3
+pvc,PVC40H,0.3
+pvc,PVC50H,0.3
+conduit,PVC16L,0.4
+conduit,PVC20L,0.4
+conduit,PVC25L,0.4
+conduit,PVC32L,0.4
+conduit,PVC40L,0.4
+conduit,PVC50L,0.4
+conduit,PVC16M,0.4
+conduit,PVC20M,0.4
+conduit,PVC25M,0.4
+conduit,PVC32M,0.4
+conduit,PVC40M,0.4
+conduit,PVC50M,0.4
+conduit,PVC16H,0.4
+conduit,PVC20H,0.4
+conduit,PVC25H,0.4
+conduit,PVC32H,0.4
+conduit,PVC40H,0.4
+conduit,PVC50H,0.4
+rigid,PVC16L,0.2
+rigid,PVC20L,0.2
+rigid,PVC25L,0.2
+rigid,PVC32L,0.2
+rigid,PVC40L,0.2
+rigid,PVC50L,0.2
+rigid,PVC16M,0.2
+rigid,PVC20M,0.2
+rigid,PVC25M,0.2
+rigid,PVC32M,0.2
+rigid,PVC40M,0.2
+rigid,PVC50M,0.2
+rigid,PVC16H,0.2
+rigid,PVC20H,0.2
+rigid,PVC25H,0.2
+rigid,PVC32H,0.2
+rigid,PVC40H,0.2
+rigid,PVC50H,0.2
+# Gauge aliases
+light,PVC16L,0.4
+light,PVC20L,0.4
+light,PVC25L,0.4
+light,PVC32L,0.4
+light,PVC40L,0.4
+light,PVC50L,0.4
+medium,PVC16M,0.4
+medium,PVC20M,0.4
+medium,PVC25M,0.4
+medium,PVC32M,0.4
+medium,PVC40M,0.4
+medium,PVC50M,0.4
+med,PVC16M,0.4
+med,PVC20M,0.4
+med,PVC25M,0.4
+med,PVC32M,0.4
+med,PVC40M,0.4
+med,PVC50M,0.4
+heavy,PVC16H,0.4
+heavy,PVC20H,0.4
+heavy,PVC25H,0.4
+heavy,PVC32H,0.4
+heavy,PVC40H,0.4
+heavy,PVC50H,0.4
+# GI Fan Box aliases
+fan box,GFB3OCT,0.5
+fanbox,GFB3OCT,0.5
+fan box,GFB3OCT14,0.5
+fanbox,GFB3OCT14,0.5
+fan box,GFB3HEXCPWD,0.5
+fanbox,GFB3HEXCPWD,0.5
+fan box,GFB25SPEC280,0.5
+fanbox,GFB25SPEC280,0.5
+fan box,GFB25DECAGON280,0.5
+fanbox,GFB25DECAGON280,0.5
+fan box,GFB3HEAVY,0.5
+fanbox,GFB3HEAVY,0.5
+gi,GFB3OCT,0.3
+gi,GFB3OCT14,0.3
+gi,GFB3HEXCPWD,0.3
+gi,GFB25SPEC280,0.3
+gi,GFB25DECAGON280,0.3
+gi,GFB3HEAVY,0.3
+box,GFB3OCT,0.2
+box,GFB3OCT14,0.2
+box,GFB3HEXCPWD,0.2
+box,GFB25SPEC280,0.2
+box,GFB25DECAGON280,0.2
+box,GFB3HEAVY,0.2
+octagonal,GFB3OCT,0.4
+octagonal,GFB3OCT14,0.4
+octagonal,GFB25SPEC280,0.4
+octagonal,GFB3HEAVY,0.4
+oct,GFB3OCT,0.4
+oct,GFB3OCT14,0.4
+oct,GFB25SPEC280,0.4
+oct,GFB3HEAVY,0.4
+hexagonal,GFB3HEXCPWD,0.4
+hex,GFB3HEXCPWD,0.4
+decagon,GFB25DECAGON280,0.4
+cpwd,GFB3HEXCPWD,0.4
+3inch,GFB3OCT,0.4
+3",GFB3OCT,0.4
+3inch,GFB3OCT14,0.4
+3",GFB3OCT14,0.4
+3inch,GFB3HEXCPWD,0.4
+3",GFB3HEXCPWD,0.4
+3inch,GFB3HEAVY,0.4
+3",GFB3HEAVY,0.4
+2.5inch,GFB25SPEC280,0.4
+2.5",GFB25SPEC280,0.4
+2.5inch,GFB25DECAGON280,0.4
+2.5",GFB25DECAGON280,0.4
+18inch,GFB3OCT,0.3
+18",GFB3OCT,0.3
+14inch,GFB3OCT14,0.3
+14",GFB3OCT14,0.3
+280mm,GFB25SPEC280,0.3
+280mm,GFB25DECAGON280,0.3
+rod,GFB3OCT,0.2
+rod,GFB3OCT14,0.2
+rod,GFB25SPEC280,0.2
+rod,GFB25DECAGON280,0.2
+# MS Box aliases
+ms box,MSB1M,0.5
+msb,MSB1M,0.5
+ms box,MSB2M,0.5
+msb,MSB2M,0.5
+ms box,MSB3M,0.5
+msb,MSB3M,0.5
+ms box,MSB4M,0.5
+msb,MSB4M,0.5
+ms box,MSB6M,0.5
+msb,MSB6M,0.5
+ms box,MSB8M,0.5
+msb,MSB8M,0.5
+ms box,MSB12M,0.5
+msb,MSB12M,0.5
+modular,MSB1M,0.4
+modular,MSB2M,0.4
+modular,MSB3M,0.4
+modular,MSB4M,0.4
+modular,MSB6M,0.4
+modular,MSB8M,0.4
+modular,MSB12M,0.4
+switch box,MSB1M,0.4
+switch box,MSB2M,0.4
+switch box,MSB3M,0.4
+switch box,MSB4M,0.4
+switch box,MSB6M,0.4
+switch box,MSB8M,0.4
+switch box,MSB12M,0.4
+1m,MSB1M,0.5
+2m,MSB2M,0.5
+3m,MSB3M,0.5
+4m,MSB4M,0.5
+6m,MSB6M,0.5
+8m,MSB8M,0.5
+12m,MSB12M,0.5
+# Cable Gland aliases
+cable gland,PG7,0.5
+cable gland,PG9,0.5
+cable gland,PG11,0.5
+cable gland,PG13.5,0.5
+cable gland,PG16,0.5
+cable gland,PG21,0.5
+gland,PG7,0.4
+gland,PG9,0.4
+gland,PG11,0.4
+gland,PG13.5,0.4
+gland,PG16,0.4
+gland,PG21,0.4
+pg7,PG7,0.6
+pg9,PG9,0.6
+pg11,PG11,0.6
+pg13.5,PG13.5,0.6
+pg16,PG16,0.6
+pg21,PG21,0.6
+nylon,PG7,0.3
+nylon,PG9,0.3
+nylon,PG11,0.3
+nylon,PG13.5,0.3
+nylon,PG16,0.3
+nylon,PG21,0.3
+# Cable Tie aliases
+cable tie,CT100x2.5,0.5
+cable tie,CT150x3.6,0.5
+cable tie,CT200x4.8,0.5
+cable tie,CT300x4.8,0.5
+cable ties,CT100x2.5,0.5
+cable ties,CT150x3.6,0.5
+cable ties,CT200x4.8,0.5
+cable ties,CT300x4.8,0.5
+tie,CT100x2.5,0.4
+tie,CT150x3.6,0.4
+tie,CT200x4.8,0.4
+tie,CT300x4.8,0.4
+ties,CT100x2.5,0.4
+ties,CT150x3.6,0.4
+ties,CT200x4.8,0.4
+ties,CT300x4.8,0.4
+100x2.5,CT100x2.5,0.6
+150x3.6,CT150x3.6,0.6
+200x4.8,CT200x4.8,0.6
+300x4.8,CT300x4.8,0.6
+# Junction Box aliases
+junction box,JB4x4x2,0.5
+junction box,JB6x6x2,0.5
+junction,JB4x4x2,0.4
+junction,JB6x6x2,0.4
+gi junction,JB4x4x2,0.5
+gi junction,JB6x6x2,0.5
+4x4x2,JB4x4x2,0.6
+6x6x2,JB6x6x2,0.6
+4x4,JB4x4x2,0.5
+6x6,JB6x6x2,0.5
+# Accessories aliases
+saddle clamp,SC20,0.5
+saddle,SC20,0.4
+clamp,SC20,0.4
+20mm,SC20,0.4
+# Color aliases
+black,NFC16,0.1
+black,NFC20,0.1
+black,NFC25,0.1
+black,NFC32,0.1
+black,NFC40,0.1
+black,NFC50,0.1
+black,PG7,0.2
+black,PG9,0.2
+black,PG11,0.2
+black,PG13.5,0.2
+black,PG16,0.2
+black,PG21,0.2
+grey,NFC16,0.1
+grey,NFC20,0.1
+grey,NFC25,0.1
+grey,NFC32,0.1
+grey,NFC40,0.1
+grey,NFC50,0.1
+gray,NFC16,0.1
+gray,NFC20,0.1
+gray,NFC25,0.1
+gray,NFC32,0.1
+gray,NFC40,0.1
+gray,NFC50,0.1
+ivory,NFC16,0.1
+ivory,NFC20,0.1
+ivory,NFC25,0.1
+ivory,NFC32,0.1
+ivory,NFC40,0.1
+ivory,NFC50,0.1
+natural,CT100x2.5,0.2
+natural,CT150x3.6,0.2
+natural,CT200x4.8,0.2
+natural,CT300x4.8,0.2
+# Pack size aliases
+pack,CT100x2.5,0.2
+pack,CT150x3.6,0.2
+pack,CT200x4.8,0.2
+pack,CT300x4.8,0.2
+pack,SC20,0.2
+pack100,CT100x2.5,0.3
+pack100,CT150x3.6,0.3
+pack100,CT200x4.8,0.3
+pack100,CT300x4.8,0.3
+pack100,SC20,0.3
+packs,CT100x2.5,0.2
+packs,CT150x3.6,0.2
+packs,CT200x4.8,0.2
+packs,CT300x4.8,0.2
+packs,SC20,0.2

@@ -1,0 +1,36 @@
+{
+  "rfq_id": "RFQ-2024-002",
+  "buyer": {
+    "company": "Beta Construction",
+    "contact": "Sarah Johnson",
+    "email": "sarah@betaconstruction.com"
+  },
+  "items": [
+    {
+      "description": "Corrugated flexible pipe 16mm",
+      "quantity": 500,
+      "unit": "meters",
+      "notes": "Black color preferred"
+    },
+    {
+      "description": "PVC conduit 25mm medium duty",
+      "quantity": 100,
+      "unit": "meters",
+      "notes": "White color"
+    },
+    {
+      "description": "Cable ties 100mm",
+      "quantity": 10,
+      "unit": "packs",
+      "notes": "Natural color"
+    },
+    {
+      "description": "Saddle clamps 20mm",
+      "quantity": 5,
+      "unit": "packs",
+      "notes": "Metal finish"
+    }
+  ],
+  "delivery_date": "2024-02-15",
+  "payment_terms": "Net 30"
+}

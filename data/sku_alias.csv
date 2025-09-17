@@ -1,0 +1,47 @@
+alias,sku_code,score_boost
+corrugated pipe,NFC16,0.1
+corr pipe,NFC16,0.1
+flexible pipe,NFC16,0.1
+flex pipe,NFC16,0.1
+cfp,NFC16,0.1
+16mm corrugated,NFC16,0.2
+16 mm corrugated,NFC16,0.2
+20mm corrugated,NFC20,0.2
+20 mm corrugated,NFC20,0.2
+25mm corrugated,NFC25,0.2
+25 mm corrugated,NFC25,0.2
+32mm corrugated,NFC32,0.2
+32 mm corrugated,NFC32,0.2
+40mm corrugated,NFC40,0.2
+40 mm corrugated,NFC40,0.2
+50mm corrugated,NFC50,0.2
+50 mm corrugated,NFC50,0.2
+pvc conduit,PVC16L,0.1
+rigid conduit,PVC16L,0.1
+conduit,PVC16L,0.1
+16mm pvc,PVC16L,0.2
+20mm pvc,PVC20L,0.2
+25mm pvc,PVC25L,0.2
+32mm pvc,PVC32L,0.2
+40mm pvc,PVC40L,0.2
+50mm pvc,PVC50L,0.2
+gi fan box,GFB3OCT,0.1
+fan box,GFB3OCT,0.1
+octagonal fan box,GFB3OCT,0.2
+hex fan box,GFB3HEXCPWD,0.2
+hexagonal fan box,GFB3HEXCPWD,0.2
+cpwd fan box,GFB3HEXCPWD,0.2
+modular box,MSB1M,0.1
+switch box,MSB1M,0.1
+ms box,MSB1M,0.1
+cable gland,PG7,0.1
+gland,PG7,0.1
+nylon gland,PG7,0.2
+pg gland,PG7,0.2
+cable tie,CT100x2.5,0.1
+tie,CT100x2.5,0.1
+nylon tie,CT100x2.5,0.2
+junction box,JB4x4x2,0.1
+gi junction box,JB4x4x2,0.2
+saddle clamp,SC20,0.2
+clamp,SC20,0.1

@@ -1,0 +1,22 @@
+From: procurement@acme.com
+To: sales@pactle.com
+Subject: Urgent Quote Request - Electrical Conduits
+
+Dear Team,
+
+We need an urgent quote for the following electrical conduits for our new warehouse project:
+
+1. 25mm corrugated flexible conduit - 300 meters
+2. 32mm flexible conduit - 200 meters  
+3. PVC rigid conduit 20mm light - 150 meters
+4. Fan Box 3 inch octagonal - 20 pieces
+5. Cable glands PG16 - 100 pieces
+6. Junction box 4x4x2 - 15 pieces
+
+Please provide competitive pricing and confirm availability.
+Delivery required by end of month.
+
+Thanks,
+John Smith
+Procurement Manager
+ACME Industries

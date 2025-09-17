@@ -1,0 +1,25 @@
+{
+  "mapping": {
+    "auto_map_threshold": 0.85,
+    "confidence_delta": 0.12,
+    "size_tolerance_mm": 2.0,
+    "fuzzy_weight": 0.6,
+    "size_weight": 0.3,
+    "material_weight": 0.1,
+    "alias_weight": 0.1
+  },
+  "pricing": {
+    "default_freight_rate": 0.05,
+    "freight_min_amount": 50,
+    "default_discount_pct": 0,
+    "tax_inclusive": false
+  },
+  "coil_lengths": {
+    "NFC16": 50,
+    "NFC20": 50,
+    "NFC25": 25,
+    "NFC32": 25,
+    "NFC40": 20,
+    "NFC50": 15
+  }
+}
