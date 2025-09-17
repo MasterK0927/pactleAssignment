@@ -14,8 +14,8 @@ RUN apk add --no-cache curl postgresql-client bash
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies (include dev deps so migrations can run)
-RUN npm ci
+# Install all dependencies including dev dependencies for build
+RUN npm ci --include=dev
 
 # Copy source code
 COPY src/ ./src/
@@ -23,8 +23,8 @@ COPY data/ ./data/
 COPY scripts/ ./scripts/
 COPY database/ ./database/
 
-# Build the application
-RUN npm run build
+# Build the application (ensure TypeScript is available)
+RUN npx tsc
 
 # Prune dev dependencies to reduce final image size
 RUN npm prune --production

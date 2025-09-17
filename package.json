@@ -12,8 +12,10 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "db:migrate": "ts-node scripts/run-migrations.ts",
-    "db:seed": "ts-node scripts/seed-database.ts",
+    "db:migrate": "node dist/scripts/run-migrations.js",
+    "db:seed": "node dist/scripts/seed-database.js",
+    "db:migrate:dev": "ts-node scripts/run-migrations.ts",
+    "db:seed:dev": "ts-node scripts/seed-database.ts",
     "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "keywords": [
