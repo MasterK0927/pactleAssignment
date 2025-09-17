@@ -2,6 +2,8 @@
 
 An automated quote generation system for manufacturers that converts messy RFQs (Request for Quotations) into accurate, professional quotes with deterministic SKU mapping and pricing.
 
+Tools Used: VsCode + Claude Code (for tests, docs and commits)
+
 ## Features
 
 - **Multi-format RFQ Processing**: Supports email text, chat messages, and CSV files
