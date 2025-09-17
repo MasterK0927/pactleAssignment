@@ -2,10 +2,10 @@
   "name": "pactle-quote-generator",
   "version": "1.0.0",
   "description": "Automated quote generation system for manufacturers",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "tsc --project tsconfig.scripts.json",
+    "start": "node dist/src/index.js",
     "dev": "ts-node src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",

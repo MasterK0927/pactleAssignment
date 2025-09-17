@@ -96,7 +96,17 @@ export class ExportService {
    * Export quote data to CSV format
    */
   async exportToCSV(quote: Quote, outputPath?: string): Promise<string> {
-    const csvPath = outputPath || path.join(process.cwd(), 'exports', `quote_${quote.quote_id}_rev${quote.revision}.csv`);
+    try {
+      if (!quote || !quote.quote_id) {
+        throw new Error('Invalid quote data: quote_id is required');
+      }
+      
+      const csvPath = outputPath || path.join(process.cwd(), 'exports', `quote_${quote.quote_id}_rev${quote.revision || 1}.csv`);
+      
+      // Ensure exports directory exists
+      const fsPromises1 = await import('fs/promises');
+      const dir = path.dirname(csvPath);
+      await fsPromises1.mkdir(dir, { recursive: true });
     
     // Prepare line items data for CSV
     const csvData = quote.line_items.map((item, index) => ({
@@ -160,15 +170,29 @@ export class ExportService {
       ]
     });
 
-    await csvWriter.writeRecords(csvData);
-    return csvPath;
+      await csvWriter.writeRecords(csvData);
+      return csvPath;
+    } catch (error) {
+      console.error('Error exporting to CSV:', error);
+      throw new Error(`CSV export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Export quote data to JSON format with clean structure
    */
   async exportToJSON(quote: Quote, outputPath?: string): Promise<string> {
-    const jsonPath = outputPath || path.join(process.cwd(), 'exports', `quote_${quote.quote_id}_rev${quote.revision}.json`);
+    try {
+      if (!quote || !quote.quote_id) {
+        throw new Error('Invalid quote data: quote_id is required');
+      }
+      
+      const jsonPath = outputPath || path.join(process.cwd(), 'exports', `quote_${quote.quote_id}_rev${quote.revision || 1}.json`);
+      
+      // Ensure exports directory exists
+      const fsPromises2 = await import('fs/promises');
+      const dir = path.dirname(jsonPath);
+      await fsPromises2.mkdir(dir, { recursive: true });
     
     // Create a clean, structured JSON export
     const exportData: any = {
@@ -247,20 +271,33 @@ export class ExportService {
       };
     }
 
-    const fs = await import('fs/promises');
-    await fs.writeFile(jsonPath, JSON.stringify(exportData, null, 2), 'utf8');
-    return jsonPath;
+      await fsPromises2.writeFile(jsonPath, JSON.stringify(exportData, null, 2), 'utf8');
+      return jsonPath;
+    } catch (error) {
+      console.error('Error exporting to JSON:', error);
+      throw new Error(`JSON export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Export tax breakup to CSV
    */
   async exportTaxBreakupToCSV(quote: Quote, outputPath?: string): Promise<string> {
-    if (!quote.totals.tax_breakup) {
-      throw new Error('No tax breakup data available');
-    }
+    try {
+      if (!quote || !quote.quote_id) {
+        throw new Error('Invalid quote data: quote_id is required');
+      }
+      
+      if (!quote.totals?.tax_breakup) {
+        throw new Error('No tax breakup data available');
+      }
 
-    const csvPath = outputPath || path.join(process.cwd(), 'exports', `tax_breakup_${quote.quote_id}_rev${quote.revision}.csv`);
+      const csvPath = outputPath || path.join(process.cwd(), 'exports', `tax_breakup_${quote.quote_id}_rev${quote.revision || 1}.csv`);
+      
+      // Ensure exports directory exists
+      const fsPromises3 = await import('fs/promises');
+      const dir = path.dirname(csvPath);
+      await fsPromises3.mkdir(dir, { recursive: true });
     
     const taxData = Object.entries(quote.totals.tax_breakup).map(([hsn, tax]) => ({
       quote_id: quote.quote_id,
@@ -293,24 +330,29 @@ export class ExportService {
       ]
     });
 
-    await csvWriter.writeRecords(taxData);
-    return csvPath;
+      await csvWriter.writeRecords(taxData);
+      return csvPath;
+    } catch (error) {
+      console.error('Error exporting tax breakup to CSV:', error);
+      throw new Error(`Tax breakup CSV export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Generate revision diff in a readable format
    */
   generateRevisionDiffReport(quote: Quote): string {
-    if (!quote.revision_diff) {
-      return 'No revision changes available.';
-    }
+    try {
+      if (!quote.revision_diff) {
+        return 'No revision changes available.';
+      }
 
-    let report = `Revision Diff Report\n`;
-    report += `====================\n`;
-    report += `Quote ID: ${quote.quote_id}\n`;
-    report += `Current Revision: ${quote.revision}\n`;
-    report += `Previous Revision: ${quote.revision_diff.previous_revision}\n`;
-    report += `Generated: ${new Date().toISOString()}\n\n`;
+      let report = `Revision Diff Report\n`;
+      report += `====================\n`;
+      report += `Quote ID: ${quote.quote_id || 'N/A'}\n`;
+      report += `Current Revision: ${quote.revision || 1}\n`;
+      report += `Previous Revision: ${quote.revision_diff.previous_revision || 0}\n`;
+      report += `Generated: ${new Date().toISOString()}\n\n`;
 
     report += `Changes Summary:\n`;
     report += `----------------\n`;
@@ -345,7 +387,11 @@ export class ExportService {
       });
     }
 
-    return report;
+      return report;
+    } catch (error) {
+      console.error('Error generating revision diff report:', error);
+      return `Error generating revision diff report: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
   }
 
   /**
@@ -359,11 +405,16 @@ export class ExportService {
     explainability_json_path?: string;
     diff_report_path?: string;
   }> {
-    const baseDir = outputDir || path.join(process.cwd(), 'exports', `quote_${quote.quote_id}_rev${quote.revision}`);
-    
-    // Ensure directory exists
-    const fs = await import('fs/promises');
-    await fs.mkdir(baseDir, { recursive: true });
+    try {
+      if (!quote || !quote.quote_id) {
+        throw new Error('Invalid quote data: quote_id is required');
+      }
+      
+      const baseDir = outputDir || path.join(process.cwd(), 'exports', `quote_${quote.quote_id}_rev${quote.revision || 1}`);
+      
+      // Ensure directory exists
+      const fsBundle = await import('fs/promises');
+      await fsBundle.mkdir(baseDir, { recursive: true });
 
     const results: any = {};
 
@@ -378,29 +429,33 @@ export class ExportService {
       results.tax_csv_path = await this.exportTaxBreakupToCSV(quote, path.join(baseDir, 'tax_breakup.csv'));
     }
 
-    // Export explainability JSON if available
-    if (quote.explainability) {
-      const explainabilityPath = path.join(baseDir, 'explainability.json');
-      const explainabilityData = {
-        quote_id: quote.quote_id,
-        revision: quote.revision,
-        timestamp: new Date().toISOString(),
-        explainability: quote.explainability,
-        confidence_metrics: this.calculateConfidenceMetrics(quote)
-      };
-      await fs.writeFile(explainabilityPath, JSON.stringify(explainabilityData, null, 2), 'utf8');
-      results.explainability_json_path = explainabilityPath;
-    }
+      // Export explainability JSON if available
+      if (quote.explainability) {
+        const explainabilityPath = path.join(baseDir, 'explainability.json');
+        const explainabilityData = {
+          quote_id: quote.quote_id,
+          revision: quote.revision || 1,
+          timestamp: new Date().toISOString(),
+          explainability: quote.explainability,
+          confidence_metrics: this.calculateConfidenceMetrics(quote)
+        };
+        await fsBundle.writeFile(explainabilityPath, JSON.stringify(explainabilityData, null, 2), 'utf8');
+        results.explainability_json_path = explainabilityPath;
+      }
 
-    // Export revision diff report if available
-    if (quote.revision_diff) {
-      const diffReportPath = path.join(baseDir, 'revision_diff.txt');
-      const diffReport = this.generateRevisionDiffReport(quote);
-      await fs.writeFile(diffReportPath, diffReport, 'utf8');
-      results.diff_report_path = diffReportPath;
-    }
+      // Export revision diff report if available
+      if (quote.revision_diff) {
+        const diffReportPath = path.join(baseDir, 'revision_diff.txt');
+        const diffReport = this.generateRevisionDiffReport(quote);
+        await fsBundle.writeFile(diffReportPath, diffReport, 'utf8');
+        results.diff_report_path = diffReportPath;
+      }
 
-    return results;
+      return results;
+    } catch (error) {
+      console.error('Error exporting quote bundle:', error);
+      throw new Error(`Quote bundle export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   private calculateMappingSuccessRate(quote: Quote): number {

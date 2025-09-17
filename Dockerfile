@@ -13,6 +13,8 @@ RUN apk add --no-cache curl postgresql-client bash
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY tsconfig.build.json ./
+COPY tsconfig.scripts.json ./
 
 # Install all dependencies including dev dependencies for build
 RUN npm ci --include=dev
@@ -23,8 +25,17 @@ COPY data/ ./data/
 COPY scripts/ ./scripts/
 COPY database/ ./database/
 
-# Build the application (ensure TypeScript is available)
-RUN npx tsc
+# Build the application (ensure TypeScript is available, exclude test files)
+RUN npx tsc --project tsconfig.scripts.json
+
+# Verify the build output
+RUN ls -la dist/
+RUN ls -la dist/src/ || echo "No src directory in dist"
+RUN ls -la dist/scripts/ || echo "No scripts directory in dist"
+RUN test -f dist/src/index.js && echo "✓ Main entry point found at dist/src/index.js" || echo "✗ Main entry point missing"
+
+# Copy database files to the correct location for compiled scripts
+RUN cp -r database dist/
 
 # Prune dev dependencies to reduce final image size
 RUN npm prune --production

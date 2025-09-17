@@ -29,7 +29,7 @@ interface SkuAliasRow {
 
 export class ConfigService {
   private static instance: ConfigService;
-  private config: AppConfig;
+  private config!: AppConfig;
 
   private constructor() {
     this.loadConfig();

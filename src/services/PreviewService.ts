@@ -113,21 +113,92 @@ export class PreviewService {
    * Generate HTML preview of the quote
    */
   generateQuotePreview(quote: Quote): PreviewData {
-    const htmlPreview = this.generateHTMLPreview(quote);
-    const summary = this.generateSummary(quote);
-    const validation = this.validateQuote(quote);
+    try {
+      // Comprehensive input validation
+      if (!quote) {
+        throw new Error('Quote data is required');
+      }
+      
+      if (!quote.quote_id || typeof quote.quote_id !== 'string' || quote.quote_id.trim() === '') {
+        throw new Error('Quote ID is required and must be a non-empty string');
+      }
+      
+      if (!quote.line_items || !Array.isArray(quote.line_items)) {
+        throw new Error('Quote line items are required and must be an array');
+      }
+      
+      if (!quote.buyer || !quote.buyer.name) {
+        throw new Error('Quote buyer information is required');
+      }
 
-    return {
-      quote,
-      html_preview: htmlPreview,
-      summary,
-      validation
-    };
+      const htmlPreview = this.generateHTMLPreview(quote);
+      const summary = this.generateSummary(quote);
+      const validation = this.validateQuote(quote);
+
+      return {
+        quote,
+        html_preview: htmlPreview,
+        summary,
+        validation
+      };
+    } catch (error) {
+      console.error('Error generating quote preview:', error);
+      // Return a comprehensive fallback preview with error information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const fallbackQuote = quote || {
+        quote_id: 'ERROR',
+        revision: 1,
+        buyer: { buyer_id: 'ERROR', name: 'Error Loading Buyer' },
+        created_at: new Date(),
+        valid_until: new Date(),
+        line_items: [],
+        totals: { subtotal: 0, discount: 0, freight: 0, tax: 0, grand_total: 0 },
+        terms: { validity_days: 30, lead_time_days: 7, payment_terms: 'Standard' }
+      } as Quote;
+      
+      return {
+        quote: fallbackQuote,
+        html_preview: `
+          <div style="color: red; padding: 20px; border: 2px solid red; border-radius: 8px; background-color: #fef2f2;">
+            <h3 style="margin: 0 0 10px 0;">⚠️ Error Generating Preview</h3>
+            <p><strong>Error:</strong> ${errorMessage}</p>
+            <p><strong>Quote ID:</strong> ${quote?.quote_id || 'Unknown'}</p>
+            <p>Please check the quote data and try again. If the problem persists, contact support.</p>
+          </div>
+        `,
+        summary: {
+          total_items: quote?.line_items?.length || 0,
+          total_amount: quote?.totals?.grand_total || 0,
+          mapping_success_rate: 0,
+          confidence_score: 0
+        },
+        validation: {
+          errors: [{ 
+            type: 'error', 
+            message: `Preview generation failed: ${errorMessage}`,
+            field: 'preview_generation'
+          }],
+          is_valid: false
+        }
+      };
+    }
   }
 
   private generateHTMLPreview(quote: Quote): string {
-    const formatCurrency = (amount: number) => `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-    const formatDate = (date: Date) => date.toLocaleDateString('en-IN');
+    try {
+      const formatCurrency = (amount: number) => {
+        const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+        return `₹${safeAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      };
+      
+      const formatDate = (date: Date | string) => {
+        try {
+          const dateObj = typeof date === 'string' ? new Date(date) : date;
+          return dateObj instanceof Date && !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-IN') : 'N/A';
+        } catch {
+          return 'N/A';
+        }
+      };
 
     return `
 <!DOCTYPE html>
@@ -397,11 +468,11 @@ export class PreviewService {
                     <h3>Buyer Information</h3>
                     <div class="info-item">
                         <span class="info-label">Name:</span>
-                        <span class="info-value">${quote.buyer.name}</span>
+                        <span class="info-value">${quote.buyer?.name || 'N/A'}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Buyer ID:</span>
-                        <span class="info-value">${quote.buyer.buyer_id}</span>
+                        <span class="info-value">${quote.buyer?.buyer_id || 'N/A'}</span>
                     </div>
                     ${quote.buyer.gstin ? `
                     <div class="info-item">
@@ -437,13 +508,13 @@ export class PreviewService {
                         ${quote.line_items.map((item, index) => `
                         <tr>
                             <td>${index + 1}</td>
-                            <td><strong>${item.sku_code}</strong></td>
-                            <td>${item.description}</td>
-                            <td>${item.hsn_code}</td>
-                            <td>${item.qty}</td>
-                            <td>${item.uom}</td>
-                            <td>${formatCurrency(item.unit_rate)}</td>
-                            <td>${formatCurrency(item.line_total)}</td>
+                            <td><strong>${item.sku_code || 'N/A'}</strong></td>
+                            <td>${item.description || 'N/A'}</td>
+                            <td>${item.hsn_code || 'N/A'}</td>
+                            <td>${item.qty || 0}</td>
+                            <td>${item.uom || 'N/A'}</td>
+                            <td>${formatCurrency(item.unit_rate || 0)}</td>
+                            <td>${formatCurrency(item.line_total || 0)}</td>
                         </tr>
                         `).join('')}
                     </tbody>
@@ -484,32 +555,32 @@ export class PreviewService {
                 <h3>Financial Summary</h3>
                 <div class="summary-row">
                     <span>Subtotal:</span>
-                    <span>${formatCurrency(quote.totals.subtotal)}</span>
+                    <span>${formatCurrency(quote.totals?.subtotal || 0)}</span>
                 </div>
                 <div class="summary-row">
                     <span>Discount:</span>
-                    <span>${formatCurrency(quote.totals.discount)}</span>
+                    <span>${formatCurrency(quote.totals?.discount || 0)}</span>
                 </div>
                 <div class="summary-row">
                     <span>Freight:</span>
-                    <span>${formatCurrency(quote.totals.freight)}</span>
+                    <span>${formatCurrency(quote.totals?.freight || 0)}</span>
                 </div>
                 <div class="summary-row">
                     <span>Tax:</span>
-                    <span>${formatCurrency(quote.totals.tax)}</span>
+                    <span>${formatCurrency(quote.totals?.tax || 0)}</span>
                 </div>
                 <div class="summary-row total">
                     <span>Grand Total:</span>
-                    <span>${formatCurrency(quote.totals.grand_total)}</span>
+                    <span>${formatCurrency(quote.totals?.grand_total || 0)}</span>
                 </div>
             </div>
 
             <div class="terms">
                 <h3>Terms & Conditions</h3>
                 <ul>
-                    <li>Validity: ${quote.terms.validity_days} days from quote date</li>
-                    <li>Lead Time: ${quote.terms.lead_time_days} days from order confirmation</li>
-                    <li>Payment Terms: ${quote.terms.payment_terms}</li>
+                    <li>Validity: ${quote.terms?.validity_days || 30} days from quote date</li>
+                    <li>Lead Time: ${quote.terms?.lead_time_days || 7} days from order confirmation</li>
+                    <li>Payment Terms: ${quote.terms?.payment_terms || 'Standard terms'}</li>
                     <li>Prices are subject to change without notice</li>
                     <li>All disputes subject to Mumbai jurisdiction</li>
                 </ul>
@@ -566,18 +637,38 @@ export class PreviewService {
 </body>
 </html>
     `;
+    } catch (error) {
+      console.error('Error generating HTML preview:', error);
+      return `
+        <div style="color: red; padding: 20px; border: 2px solid red; border-radius: 8px; background-color: #fef2f2;">
+          <h3>Error Generating HTML Preview</h3>
+          <p>Error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
+          <p>Quote ID: ${quote?.quote_id || 'Unknown'}</p>
+        </div>
+      `;
+    }
   }
 
   private generateSummary(quote: Quote): PreviewData['summary'] {
-    const mappingSuccessRate = this.calculateMappingSuccessRate(quote);
-    const confidenceScore = this.calculateOverallConfidence(quote);
+    try {
+      const mappingSuccessRate = this.calculateMappingSuccessRate(quote);
+      const confidenceScore = this.calculateOverallConfidence(quote);
 
-    return {
-      total_items: quote.line_items.length,
-      total_amount: quote.totals.grand_total,
-      mapping_success_rate: mappingSuccessRate,
-      confidence_score: confidenceScore
-    };
+      return {
+        total_items: quote.line_items?.length || 0,
+        total_amount: quote.totals?.grand_total || 0,
+        mapping_success_rate: mappingSuccessRate,
+        confidence_score: confidenceScore
+      };
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      return {
+        total_items: 0,
+        total_amount: 0,
+        mapping_success_rate: 0,
+        confidence_score: 0
+      };
+    }
   }
 
   private validateQuote(quote: Quote): PreviewData['validation'] {

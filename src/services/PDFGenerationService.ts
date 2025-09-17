@@ -2,8 +2,11 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 
+// Ensure PDFDocument is properly imported
+const PDFDoc = PDFDocument as any;
+
 // Type definition for PDFDocument
-type PDFDoc = typeof PDFDocument.prototype;
+type PDFDoc = PDFKit.PDFDocument;
 
 interface Quote {
   quote_id: string;
@@ -131,16 +134,52 @@ export class PDFGenerationService {
   async generatePDF(quote: Quote, branding?: CompanyBranding): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
-        const doc = new PDFDocument({ 
-          size: 'A4',
-          margin: 50,
-          info: {
-            Title: `Quotation ${quote.quote_id}`,
-            Author: branding?.company_name || this.defaultBranding.company_name,
-            Subject: `Quote for ${quote.buyer.name}`,
-            Keywords: 'quote, rfq, manufacturing'
+        // Comprehensive input validation
+        if (!quote) {
+          throw new Error('Quote data is required');
+        }
+        
+        if (!quote.quote_id || typeof quote.quote_id !== 'string' || quote.quote_id.trim() === '') {
+          throw new Error('Invalid quote data: quote_id is required and must be a non-empty string');
+        }
+        
+        if (!quote.line_items || !Array.isArray(quote.line_items) || quote.line_items.length === 0) {
+          throw new Error('Invalid quote data: at least one line item is required');
+        }
+        
+        if (!quote.buyer || !quote.buyer.name || typeof quote.buyer.name !== 'string') {
+          throw new Error('Invalid quote data: buyer name is required');
+        }
+        
+        if (!quote.totals || typeof quote.totals.grand_total !== 'number' || quote.totals.grand_total <= 0) {
+          throw new Error('Invalid quote data: valid totals are required');
+        }
+        
+        // Validate line items
+        for (let i = 0; i < quote.line_items.length; i++) {
+          const item = quote.line_items[i];
+          if (!item.sku_code || !item.description || typeof item.qty !== 'number' || item.qty <= 0) {
+            throw new Error(`Invalid line item at index ${i}: missing required fields or invalid quantity`);
           }
-        });
+        }
+
+        // Create PDF document with error handling
+        let doc: any;
+        try {
+          doc = new PDFDoc({ 
+            size: 'A4',
+            margin: 50,
+            info: {
+              Title: `Quotation ${quote.quote_id}`,
+              Author: branding?.company_name || this.defaultBranding.company_name,
+              Subject: `Quote for ${quote.buyer.name}`,
+              Keywords: 'quote, rfq, manufacturing'
+            }
+          });
+        } catch (pdfError) {
+          console.error('PDF document creation failed:', pdfError);
+          throw new Error(`PDF document creation failed: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`);
+        }
         const chunks: Buffer[] = [];
         const brand = branding || this.defaultBranding;
         let pageNumber = 1;
@@ -198,106 +237,149 @@ export class PDFGenerationService {
 
         doc.end();
       } catch (error) {
-        reject(error);
+        console.error('PDF generation error:', error);
+        // Provide more specific error information
+        const errorMessage = error instanceof Error ? error.message : 'Unknown PDF generation error';
+        reject(new Error(`PDF generation failed: ${errorMessage}`));
       }
     });
   }
 
-  private addCompanyHeader(doc: PDFDoc, branding: CompanyBranding): void {
-    // Company header with branding
-    doc.fontSize(18).fillColor('#2563eb').text(branding.company_name, { align: 'center' });
-    doc.fontSize(10).fillColor('black').text(branding.address, { align: 'center' });
-    doc.text(`GSTIN: ${branding.gstin} | PAN: ${branding.pan}`, { align: 'center' });
-    doc.text(`Phone: ${branding.contact.phone} | Email: ${branding.contact.email}`, { align: 'center' });
-    if (branding.contact.website) {
-      doc.text(`Website: ${branding.contact.website}`, { align: 'center' });
+  private addCompanyHeader(doc: any, branding: CompanyBranding): void {
+    try {
+      // Company header with branding
+      doc.fontSize(18).fillColor('#2563eb').text(branding.company_name || 'Company Name', { align: 'center' });
+      doc.fontSize(10).fillColor('black').text(branding.address || 'Company Address', { align: 'center' });
+      doc.text(`GSTIN: ${branding.gstin || 'N/A'} | PAN: ${branding.pan || 'N/A'}`, { align: 'center' });
+      doc.text(`Phone: ${branding.contact?.phone || 'N/A'} | Email: ${branding.contact?.email || 'N/A'}`, { align: 'center' });
+      if (branding.contact?.website) {
+        doc.text(`Website: ${branding.contact.website}`, { align: 'center' });
+      }
+      
+      // Draw line separator
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown();
+      
+      // QUOTATION title
+      doc.fontSize(20).fillColor('#1f2937').text('QUOTATION', { align: 'center' });
+      doc.moveDown();
+    } catch (error) {
+      console.error('Error adding company header:', error);
+      // Add fallback header
+      doc.fontSize(20).fillColor('#1f2937').text('QUOTATION', { align: 'center' });
+      doc.moveDown();
     }
-    
-    // Draw line separator
-    doc.moveDown(0.5);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
-    doc.moveDown();
-    
-    // QUOTATION title
-    doc.fontSize(20).fillColor('#1f2937').text('QUOTATION', { align: 'center' });
-    doc.moveDown();
   }
 
-  private addQuoteDetails(doc: PDFDoc, quote: Quote): void {
-    const startY = doc.y;
-    
-    // Left column
-    doc.fontSize(11);
-    doc.text(`Quote ID: ${quote.quote_id}`, 50, startY);
-    doc.text(`Date: ${new Date(quote.created_at).toLocaleDateString('en-IN')}`, 50, startY + 15);
-    doc.text(`Valid Until: ${new Date(quote.valid_until).toLocaleDateString('en-IN')}`, 50, startY + 30);
-    
-    // Right column
-    doc.text(`Revision: ${quote.revision}`, 400, startY);
-    doc.text(`Currency: INR (₹)`, 400, startY + 15);
-    
-    doc.y = startY + 50;
-    doc.moveDown(0.5);
+  private addQuoteDetails(doc: any, quote: Quote): void {
+    try {
+      const startY = doc.y;
+      
+      // Left column
+      doc.fontSize(11);
+      doc.text(`Quote ID: ${quote.quote_id || 'N/A'}`, 50, startY);
+      
+      const createdDate = quote.created_at ? new Date(quote.created_at).toLocaleDateString('en-IN') : 'N/A';
+      doc.text(`Date: ${createdDate}`, 50, startY + 15);
+      
+      const validUntilDate = quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('en-IN') : 'N/A';
+      doc.text(`Valid Until: ${validUntilDate}`, 50, startY + 30);
+      
+      // Right column
+      doc.text(`Revision: ${quote.revision || 1}`, 400, startY);
+      doc.text(`Currency: INR (₹)`, 400, startY + 15);
+      
+      doc.y = startY + 50;
+      doc.moveDown(0.5);
+    } catch (error) {
+      console.error('Error adding quote details:', error);
+      // Add minimal fallback details
+      doc.fontSize(11);
+      doc.text(`Quote ID: ${quote.quote_id || 'N/A'}`, 50);
+      doc.moveDown();
+    }
   }
 
-  private addBuyerDetails(doc: PDFDoc, buyer: Quote['buyer']): void {
-    doc.fontSize(12).text('Bill To:', { underline: true });
-    doc.moveDown(0.3);
-    doc.fontSize(11);
-    doc.text(`${buyer.name}`);
-    if (buyer.address) doc.text(`${buyer.address}`);
-    if (buyer.gstin) doc.text(`GSTIN: ${buyer.gstin}`);
-    if (buyer.contact) doc.text(`Contact: ${buyer.contact}`);
-    doc.moveDown();
+  private addBuyerDetails(doc: any, buyer: Quote['buyer']): void {
+    try {
+      doc.fontSize(12).text('Bill To:', { underline: true });
+      doc.moveDown(0.3);
+      doc.fontSize(11);
+      doc.text(`${buyer?.name || 'N/A'}`);
+      if (buyer?.address) doc.text(`${buyer.address}`);
+      if (buyer?.gstin) doc.text(`GSTIN: ${buyer.gstin}`);
+      if (buyer?.contact) doc.text(`Contact: ${buyer.contact}`);
+      doc.moveDown();
+    } catch (error) {
+      console.error('Error adding buyer details:', error);
+      // Add fallback buyer info
+      doc.fontSize(12).text('Bill To:', { underline: true });
+      doc.moveDown(0.3);
+      doc.fontSize(11);
+      doc.text('Buyer Information');
+      doc.moveDown();
+    }
   }
 
-  private addLineItems(doc: PDFDoc, quote: Quote): void {
-    if (!quote.line_items || quote.line_items.length === 0) return;
-    
-    doc.fontSize(12).text('Line Items:', { underline: true });
-    doc.moveDown(0.5);
-    
-    // Table headers
-    const tableTop = doc.y;
-    doc.fontSize(9);
-    const headers = ['S.No', 'SKU Code', 'Description', 'HSN', 'Qty', 'UOM', 'Rate (₹)', 'Total (₹)'];
-    const positions = [50, 80, 150, 280, 320, 350, 400, 480];
-    
-    headers.forEach((header, i) => {
-      doc.text(header, positions[i], tableTop);
-    });
-    
-    // Draw header line
-    doc.moveTo(50, tableTop + 15).lineTo(545, tableTop + 15).stroke();
-    
-    let currentY = tableTop + 25;
-    quote.line_items.forEach((item, index) => {
-      if (currentY > 700) {
-        doc.addPage();
-        currentY = 50;
+  private addLineItems(doc: any, quote: Quote): void {
+    try {
+      if (!quote.line_items || quote.line_items.length === 0) {
+        doc.fontSize(12).text('No line items available', { underline: true });
+        doc.moveDown();
+        return;
       }
       
-      const values = [
-        (index + 1).toString(),
-        item.sku_code,
-        item.description.length > 20 ? item.description.substring(0, 17) + '...' : item.description,
-        item.hsn_code,
-        item.qty.toString(),
-        item.uom,
-        item.unit_rate.toFixed(2),
-        item.line_total.toFixed(2)
-      ];
+      doc.fontSize(12).text('Line Items:', { underline: true });
+      doc.moveDown(0.5);
       
-      values.forEach((value, i) => {
-        doc.text(value, positions[i], currentY);
+      // Table headers
+      const tableTop = doc.y;
+      doc.fontSize(9);
+      const headers = ['S.No', 'SKU Code', 'Description', 'HSN', 'Qty', 'UOM', 'Rate (₹)', 'Total (₹)'];
+      const positions = [50, 80, 150, 280, 320, 350, 400, 480];
+      
+      headers.forEach((header, i) => {
+        doc.text(header, positions[i], tableTop);
       });
       
-      currentY += 18;
-    });
-    
-    // Draw final line
-    doc.moveTo(50, currentY).lineTo(545, currentY).stroke();
-    doc.y = currentY + 10;
+      // Draw header line
+      doc.moveTo(50, tableTop + 15).lineTo(545, tableTop + 15).stroke();
+      
+      let currentY = tableTop + 25;
+      quote.line_items.forEach((item, index) => {
+        if (currentY > 700) {
+          doc.addPage();
+          currentY = 50;
+        }
+        
+        const values = [
+          (index + 1).toString(),
+          item.sku_code || 'N/A',
+          item.description ? (item.description.length > 20 ? item.description.substring(0, 17) + '...' : item.description) : 'N/A',
+          item.hsn_code || 'N/A',
+          (item.qty || 0).toString(),
+          item.uom || 'N/A',
+          (item.unit_rate || 0).toFixed(2),
+          (item.line_total || 0).toFixed(2)
+        ];
+        
+        values.forEach((value, i) => {
+          doc.text(value, positions[i], currentY);
+        });
+        
+        currentY += 18;
+      });
+      
+      // Draw final line
+      doc.moveTo(50, currentY).lineTo(545, currentY).stroke();
+      doc.y = currentY + 10;
+    } catch (error) {
+      console.error('Error adding line items:', error);
+      // Add fallback line items section
+      doc.fontSize(12).text('Line Items: Error displaying items', { underline: true });
+      doc.moveDown();
+    }
   }
 
   private addTaxBreakup(doc: PDFDoc, taxBreakup: NonNullable<Quote['totals']['tax_breakup']>): void {
@@ -339,30 +421,38 @@ export class PDFGenerationService {
     doc.y = currentY + 10;
   }
 
-  private addFinancialSummary(doc: PDFDoc, totals: Quote['totals']): void {
-    doc.moveDown();
-    doc.fontSize(12).text('Financial Summary:', { underline: true });
-    doc.moveDown(0.5);
-    
-    const summaryItems = [
-      ['Subtotal:', `₹${totals.subtotal.toFixed(2)}`],
-      ['Discount:', `₹${totals.discount.toFixed(2)}`],
-      ['Freight:', `₹${totals.freight.toFixed(2)}`],
-      ['Tax:', `₹${totals.tax.toFixed(2)}`],
-      ['Grand Total:', `₹${totals.grand_total.toFixed(2)}`]
-    ];
-    
-    doc.fontSize(11);
-    summaryItems.forEach(([label, value], index) => {
-      if (index === summaryItems.length - 1) {
-        doc.fontSize(13).fillColor('#2563eb');
-      }
-      doc.text(label, 350, doc.y);
-      doc.text(value, 450, doc.y - 14);
-      doc.moveDown(0.3);
-    });
-    
-    doc.fillColor('black').fontSize(11);
+  private addFinancialSummary(doc: any, totals: Quote['totals']): void {
+    try {
+      doc.moveDown();
+      doc.fontSize(12).text('Financial Summary:', { underline: true });
+      doc.moveDown(0.5);
+      
+      const summaryItems = [
+        ['Subtotal:', `₹${(totals?.subtotal || 0).toFixed(2)}`],
+        ['Discount:', `₹${(totals?.discount || 0).toFixed(2)}`],
+        ['Freight:', `₹${(totals?.freight || 0).toFixed(2)}`],
+        ['Tax:', `₹${(totals?.tax || 0).toFixed(2)}`],
+        ['Grand Total:', `₹${(totals?.grand_total || 0).toFixed(2)}`]
+      ];
+      
+      doc.fontSize(11);
+      summaryItems.forEach(([label, value], index) => {
+        if (index === summaryItems.length - 1) {
+          doc.fontSize(13).fillColor('#2563eb');
+        }
+        doc.text(label, 350, doc.y);
+        doc.text(value, 450, doc.y - 14);
+        doc.moveDown(0.3);
+      });
+      
+      doc.fillColor('black').fontSize(11);
+    } catch (error) {
+      console.error('Error adding financial summary:', error);
+      // Add fallback financial summary
+      doc.moveDown();
+      doc.fontSize(12).text('Financial Summary: Error displaying totals', { underline: true });
+      doc.moveDown();
+    }
   }
 
   private addTermsAndConditions(doc: PDFDoc, terms: Quote['terms']): void {

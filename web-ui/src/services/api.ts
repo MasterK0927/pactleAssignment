@@ -26,7 +26,7 @@ class ApiClient {
 
   constructor() {
     this.baseURL = apiConfig.baseUrl;
-    this.accessToken = localStorage.getItem('auth_token');
+    this.accessToken = localStorage.getItem('access_token');
   }
 
   setAuthErrorHandler(handler: () => void): void {
@@ -218,12 +218,12 @@ class ApiClient {
 
   setAuthToken(token: string): void {
     this.accessToken = token;
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem('access_token', token);
   }
 
   clearAuth(): void {
     this.accessToken = null;
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
   }
 

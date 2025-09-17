@@ -341,9 +341,41 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
             </button>
             
             <button
-              onClick={() => {
-                const token = localStorage.getItem('access_token');
-                window.open(`/api/quotes/${quote.quote_id}/pdf/enhanced?token=${token}`, '_blank');
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('access_token');
+                  if (!token) {
+                    alert('Please sign in to download PDF');
+                    return;
+                  }
+                  
+                  const response = await fetch(`/api/quotes/${quote.quote_id}/pdf/enhanced`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
+                  
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('PDF download failed:', errorText);
+                    throw new Error(`Failed to download PDF: ${response.status} ${response.statusText}`);
+                  }
+                  
+                  const blob = await response.blob();
+                  if (blob.size === 0) {
+                    throw new Error('PDF file is empty');
+                  }
+                  
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `quote-${quote.quote_id}-enhanced.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (error: any) {
+                  console.error('Error downloading PDF:', error);
+                  alert(`Failed to download PDF: ${error.message || 'Unknown error'}`);
+                }
               }}
               className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             >
@@ -352,9 +384,41 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
             </button>
 
             <button
-              onClick={() => {
-                const token = localStorage.getItem('access_token');
-                window.open(`/api/quotes/${quote.quote_id}/export/csv?token=${token}`, '_blank');
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('access_token');
+                  if (!token) {
+                    alert('Please sign in to export CSV');
+                    return;
+                  }
+                  
+                  const response = await fetch(`/api/quotes/${quote.quote_id}/export/csv`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
+                  
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('CSV export failed:', errorText);
+                    throw new Error(`Failed to export CSV: ${response.status} ${response.statusText}`);
+                  }
+                  
+                  const blob = await response.blob();
+                  if (blob.size === 0) {
+                    throw new Error('CSV file is empty');
+                  }
+                  
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `quote-${quote.quote_id}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (error: any) {
+                  console.error('Error exporting CSV:', error);
+                  alert(`Failed to export CSV: ${error.message || 'Unknown error'}`);
+                }
               }}
               className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
             >
@@ -363,9 +427,41 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
             </button>
 
             <button
-              onClick={() => {
-                const token = localStorage.getItem('access_token');
-                window.open(`/api/quotes/${quote.quote_id}/explainability?token=${token}`, '_blank');
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('access_token');
+                  if (!token) {
+                    alert('Please sign in to export explainability data');
+                    return;
+                  }
+                  
+                  const response = await fetch(`/api/quotes/${quote.quote_id}/explainability`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
+                  
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Explainability export failed:', errorText);
+                    throw new Error(`Failed to export explainability data: ${response.status} ${response.statusText}`);
+                  }
+                  
+                  const blob = await response.blob();
+                  if (blob.size === 0) {
+                    throw new Error('Explainability file is empty');
+                  }
+                  
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `explainability-${quote.quote_id}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                } catch (error: any) {
+                  console.error('Error exporting explainability data:', error);
+                  alert(`Failed to export explainability data: ${error.message || 'Unknown error'}`);
+                }
               }}
               className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
             >

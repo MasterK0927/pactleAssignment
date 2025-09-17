@@ -514,13 +514,18 @@ app.post('/api/quotes', authMiddleware.authenticate, async (req: AuthenticatedRe
 });
 
 app.get('/api/credits', authMiddleware.authenticate, async (req: AuthenticatedRequest, res) => {
+  const buyerId = (req.query.buyer_id as string) || req.user?.id || 'WEB-USER';
   try {
-    const buyerId = (req.query.buyer_id as string) || req.user?.id || 'WEB-USER';
     const credits = await creditsService.getCredits(buyerId);
     return res.json({ buyer_id: buyerId, credits });
   } catch (error: any) {
     console.error('Credits get error:', error);
-    res.status(500).json({ error: 'Failed to get credits' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Credits retrieval failed', 
+      details: errorMessage,
+      buyer_id: buyerId 
+    });
   }
 });
 
@@ -539,7 +544,12 @@ app.post('/api/credits/set', authMiddleware.authenticate, async (req: Authentica
     return res.json({ buyer_id, credits: newCredits });
   } catch (error: any) {
     console.error('Credits set error:', error);
-    res.status(500).json({ error: 'Failed to set credits' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Credits update failed', 
+      details: errorMessage,
+      buyer_id: req.body.buyer_id 
+    });
   }
 });
 
@@ -577,7 +587,12 @@ app.post('/api/credits/purchase', authMiddleware.authenticate, async (req: Authe
     res.json(session);
   } catch (error: any) {
     console.error('Credits purchase error:', error);
-    res.status(500).json({ error: 'Failed to purchase credits' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Credits purchase failed', 
+      details: errorMessage,
+      buyer_id: req.body.buyer_id 
+    });
   }
 });
 
@@ -599,6 +614,7 @@ app.get('/api/quotes/:quoteId', authMiddleware.authenticate, async (req: Authent
 app.get('/api/quotes', authMiddleware.authenticate, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user?.id;
+    
     let quotes;
     
     if (userId) {
@@ -632,7 +648,12 @@ app.get('/api/quotes/:quoteId/pdf', authMiddleware.authenticate, async (req: Aut
     res.send(pdfBuffer);
   } catch (error: any) {
     console.error('PDF generation error:', error);
-    res.status(500).json({ error: 'PDF generation failed' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'PDF generation failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 
@@ -714,7 +735,12 @@ app.get('/api/quotes/:quoteId/pdf/enhanced', authMiddleware.authenticate, async 
     res.send(pdfBuffer);
   } catch (error: any) {
     console.error('Enhanced PDF generation error:', error);
-    res.status(500).json({ error: 'Enhanced PDF generation failed' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Enhanced PDF generation failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 
@@ -732,7 +758,12 @@ app.get('/api/quotes/:quoteId/preview', authMiddleware.authenticate, async (req:
     res.json(previewData);
   } catch (error: any) {
     console.error('Quote preview error:', error);
-    res.status(500).json({ error: 'Failed to generate quote preview' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Quote preview failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 
@@ -756,7 +787,12 @@ app.get('/api/quotes/:quoteId/export/csv', authMiddleware.authenticate, async (r
     res.send(csvContent);
   } catch (error: any) {
     console.error('CSV export error:', error);
-    res.status(500).json({ error: 'Failed to export CSV' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'CSV export failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 
@@ -780,7 +816,12 @@ app.get('/api/quotes/:quoteId/export/json', authMiddleware.authenticate, async (
     res.send(jsonContent);
   } catch (error: any) {
     console.error('JSON export error:', error);
-    res.status(500).json({ error: 'Failed to export JSON' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'JSON export failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 
@@ -830,7 +871,12 @@ app.get('/api/quotes/:quoteId/export/tax-csv', authMiddleware.authenticate, asyn
     res.send(csvContent);
   } catch (error: any) {
     console.error('Tax CSV export error:', error);
-    res.status(500).json({ error: 'Failed to export tax breakup CSV' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Tax CSV export failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 
@@ -889,7 +935,12 @@ app.get('/api/quotes/:quoteId/explainability', authMiddleware.authenticate, asyn
     res.send(explainabilityJSON);
   } catch (error: any) {
     console.error('Explainability export error:', error);
-    res.status(500).json({ error: 'Failed to export explainability data' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Explainability export failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 
@@ -959,7 +1010,12 @@ app.get('/api/quotes/:quoteId/export/bundle', authMiddleware.authenticate, async
     });
   } catch (error: any) {
     console.error('Bundle export error:', error);
-    res.status(500).json({ error: 'Failed to export quote bundle' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Bundle export failed', 
+      details: errorMessage,
+      quote_id: req.params.quoteId 
+    });
   }
 });
 

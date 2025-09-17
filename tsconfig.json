@@ -26,5 +26,5 @@
     "noUnusedParameters": false
   },
   "include": ["src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*", "src/__tests__/**/*"]
 }
