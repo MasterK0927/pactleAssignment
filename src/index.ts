@@ -1053,6 +1053,86 @@ app.get('/api/dashboard/stats', authMiddleware.authenticate, async (req: Authent
 });
 
 
+app.post('/api/sku/test', async (req, res) => {
+  try {
+    const { description, sizeOdMm, material, gauge, colour } = req.body;
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+
+    // Load SKU catalog
+    const priceRepo = new CSVPriceMasterRepository(process.env.PRICE_MASTER_PATH || './data/price_master.csv');
+    const skuCatalog = await priceRepo.getAllSKUs();
+
+    // Create a mock parsed line item for testing
+    const testLineItem = {
+      input_text: description.trim(),
+      qty: 1,
+      uom: 'PCS',
+      raw_tokens: {
+        size_token: sizeOdMm ? sizeOdMm.toString() : undefined,
+        material_token: material || undefined,
+        gauge_token: gauge || undefined,
+        color_token: colour || undefined,
+      },
+      normalized: {
+        size_mm: sizeOdMm ? parseFloat(sizeOdMm) : undefined,
+        material: material || undefined,
+        gauge: gauge || undefined,
+        color: colour || undefined,
+      }
+    };
+
+    // Use the mapping service to find candidates
+    const mapper = new DeterministicMappingService();
+    const mappedResults = await mapper.mapLineItems([testLineItem], skuCatalog);
+    const result = mappedResults[0];
+
+    if (!result || !result.mapping_result) {
+      return res.status(500).json({ error: 'Failed to process SKU test' });
+    }
+
+    // Transform the result to match the frontend interface
+    const response = {
+      matched: result.mapping_result.status === 'auto_mapped',
+      needsReview: result.mapping_result.status === 'needs_review',
+      explanation: result.mapping_result.explanation?.assumptions?.join('; ') || 
+                  `Mapping status: ${result.mapping_result.status}`,
+      candidate: result.mapping_result.selected_sku ? (() => {
+        const selectedSku = skuCatalog.find(s => s.skuCode === result.mapping_result.selected_sku);
+        return selectedSku ? {
+          skuCode: selectedSku.skuCode,
+          description: selectedSku.description,
+          rateInr: selectedSku.rateInr,
+          material: selectedSku.material,
+        } : undefined;
+      })() : undefined,
+      candidates: result.mapping_result.candidates?.map(candidate => {
+        const sku = skuCatalog.find(s => s.skuCode === candidate.sku_code);
+        return {
+          sku: {
+            skuCode: candidate.sku_code,
+            description: sku?.description || '',
+            rateInr: sku?.rateInr || 0,
+            material: sku?.material || '',
+          },
+          score: candidate.score,
+          reasons: candidate.reason ? candidate.reason.split('; ') : [],
+        };
+      }) || [],
+    };
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('SKU test error:', error);
+    res.status(500).json({ 
+      error: 'SKU test failed', 
+      details: error.message 
+    });
+  }
+});
+
 app.get('/api/schemas', authMiddleware.authenticate, (req: AuthenticatedRequest, res) => {
   try {
     res.json({ schemas: PREDEFINED_SCHEMAS });

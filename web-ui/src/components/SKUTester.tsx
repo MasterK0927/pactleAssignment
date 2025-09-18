@@ -65,11 +65,25 @@ export const SKUTester: React.FC = () => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'SKU test failed');
+        let errorMessage = 'SKU test failed';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch (parseError) {
+          // If we can't parse the error response as JSON, use the status text
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        throw new Error('Server returned invalid response format. Please check if the backend is running correctly.');
+      }
+      
       setResult(data);
     } catch (error: any) {
       console.error('Error testing SKU:', error);
