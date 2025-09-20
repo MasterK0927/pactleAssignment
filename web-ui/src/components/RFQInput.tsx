@@ -46,22 +46,29 @@ export const RFQInput: React.FC<RFQInputProps> = ({ setQuote, setLoading, onCred
 
   // Persistence helpers
   useEffect(() => {
+    // By default, do NOT auto-prefill inputs. Only load saved inputs if explicitly opted-in.
     try {
-      const savedInputs = JSON.parse(localStorage.getItem('rfqInputs') || '{}');
-      if (typeof savedInputs.email === 'string') setEmailText(savedInputs.email);
-      if (typeof savedInputs.chat === 'string') setChatMessage(savedInputs.chat);
-      if (typeof savedInputs.csv === 'string') setCsvContent(savedInputs.csv);
+      const remember = localStorage.getItem('rfqRemember') === 'true';
+      if (remember) {
+        const savedInputs = JSON.parse(localStorage.getItem('rfqInputs') || '{}');
+        if (typeof savedInputs.email === 'string') setEmailText(savedInputs.email);
+        if (typeof savedInputs.chat === 'string') setChatMessage(savedInputs.chat);
+        if (typeof savedInputs.csv === 'string') setCsvContent(savedInputs.csv);
+      }
     } catch {}
-    // Try Sample RFQ prefill
+    // Do not auto-load sample data unless explicitly allowed by a flag
     try {
-      const trySample = JSON.parse(localStorage.getItem('rfqTrySample') || 'null');
-      if (trySample?.type === 'csv' || trySample?.type === 'email' || trySample?.type === 'chat') {
-        setInputType(trySample.type);
-        const map: Record<string, string> = { email: sampleData.email, chat: sampleData.chat, csv: sampleData.csv } as any;
-        if (trySample.type === 'email') setEmailText(map.email);
-        if (trySample.type === 'chat') setChatMessage(map.chat);
-        if (trySample.type === 'csv') setCsvContent(map.csv);
-        localStorage.removeItem('rfqTrySample');
+      const allowPrefill = localStorage.getItem('rfqAllowPrefill') === 'true';
+      if (allowPrefill) {
+        const trySample = JSON.parse(localStorage.getItem('rfqTrySample') || 'null');
+        if (trySample?.type === 'csv' || trySample?.type === 'email' || trySample?.type === 'chat') {
+          setInputType(trySample.type);
+          const map: Record<string, string> = { email: sampleData.email, chat: sampleData.chat, csv: sampleData.csv } as any;
+          if (trySample.type === 'email') setEmailText(map.email);
+          if (trySample.type === 'chat') setChatMessage(map.chat);
+          if (trySample.type === 'csv') setCsvContent(map.csv);
+          localStorage.removeItem('rfqTrySample');
+        }
       }
     } catch {}
     try {

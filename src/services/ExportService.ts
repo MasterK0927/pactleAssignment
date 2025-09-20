@@ -470,18 +470,27 @@ export class ExportService {
 
   private calculateConfidenceMetrics(quote: Quote): any {
     if (!quote.explainability) return null;
-    
-    const avgProcessingConfidence = quote.explainability.processing_steps.reduce(
-      (sum, step) => sum + step.confidence, 0
-    ) / quote.explainability.processing_steps.length;
-    
-    const mappingConfidences = Object.values(quote.explainability.mapping_confidence);
-    const avgMappingConfidence = mappingConfidences.reduce((sum, conf) => sum + conf, 0) / mappingConfidences.length;
-    
+
+    const steps = Array.isArray(quote.explainability.processing_steps)
+      ? quote.explainability.processing_steps
+      : [];
+    const avgProcessingConfidence = steps.length > 0
+      ? steps.reduce((sum, step) => sum + (Number(step.confidence) || 0), 0) / steps.length
+      : 0;
+
+    const mappingConfValues = quote.explainability.mapping_confidence
+      ? Object.values(quote.explainability.mapping_confidence).map(v => Number(v) || 0)
+      : [];
+    const avgMappingConfidence = mappingConfValues.length > 0
+      ? mappingConfValues.reduce((sum, conf) => sum + conf, 0) / mappingConfValues.length
+      : 0;
+
+    const overall = (avgProcessingConfidence + avgMappingConfidence) / 2;
+
     return {
-      average_processing_confidence: avgProcessingConfidence,
-      average_mapping_confidence: avgMappingConfidence,
-      overall_confidence: (avgProcessingConfidence + avgMappingConfidence) / 2
+      average_processing_confidence: Number.isFinite(avgProcessingConfidence) ? avgProcessingConfidence : 0,
+      average_mapping_confidence: Number.isFinite(avgMappingConfidence) ? avgMappingConfidence : 0,
+      overall_confidence: Number.isFinite(overall) ? overall : 0,
     };
   }
 }

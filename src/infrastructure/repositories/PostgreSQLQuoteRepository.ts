@@ -303,6 +303,23 @@ export class PostgreSQLQuoteRepository {
   }
 
   private mapQuoteLineRecord(row: any): QuoteLineRecord {
+    // explanation_data can be JSONB (object) or TEXT (stringified). Be robust.
+    let explanation: any = null;
+    const raw = row.explanation_data;
+    if (raw !== null && raw !== undefined) {
+      if (typeof raw === 'string') {
+        try {
+          explanation = JSON.parse(raw);
+        } catch {
+          // If it's not valid JSON, keep the raw string to avoid throwing
+          explanation = raw;
+        }
+      } else {
+        // Already an object (from JSONB)
+        explanation = raw;
+      }
+    }
+
     return {
       id: row.id,
       quote_id: row.quote_id,
@@ -314,7 +331,7 @@ export class PostgreSQLQuoteRepository {
       unit_price: row.unit_price,
       total_price: row.total_price,
       status: row.status,
-      explanation_data: row.explanation_data ? JSON.parse(row.explanation_data) : null,
+      explanation_data: explanation,
       created_at: row.created_at,
       updated_at: row.updated_at
     };

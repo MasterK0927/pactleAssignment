@@ -691,6 +691,17 @@ app.get('/api/quotes/:quoteId/pdf', authMiddleware.authenticate, async (req: Aut
       return res.status(404).json({ error: 'Quote not found' });
     }
 
+    // Diagnostic logging to investigate discrepancies between UI and backend data
+    try {
+      const lineCount = Array.isArray((quote as any).line_items) ? (quote as any).line_items.length : -1;
+      console.log('[PDF DEBUG] Generating PDF for quote', quoteId, {
+        line_items_count: lineCount,
+        totals: quote.totals,
+      });
+    } catch (e) {
+      console.warn('[PDF DEBUG] Failed to log quote diagnostics for', quoteId);
+    }
+
     const pdfBuffer = await pdfGenerationService.generatePDF(quote as any);
 
     res.setHeader('Content-Type', 'application/pdf');

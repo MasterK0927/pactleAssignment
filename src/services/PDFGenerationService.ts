@@ -143,23 +143,37 @@ export class PDFGenerationService {
           throw new Error('Invalid quote data: quote_id is required and must be a non-empty string');
         }
         
-        if (!quote.line_items || !Array.isArray(quote.line_items) || quote.line_items.length === 0) {
-          throw new Error('Invalid quote data: at least one line item is required');
+        // Allow zero line items; we'll render a clear notice in the PDF instead of failing
+        if (!quote.line_items || !Array.isArray(quote.line_items)) {
+          console.warn('PDF generation warning: line_items missing or invalid; proceeding with empty list');
+          (quote as any).line_items = [];
         }
         
         if (!quote.buyer || !quote.buyer.name || typeof quote.buyer.name !== 'string') {
           throw new Error('Invalid quote data: buyer name is required');
         }
         
-        if (!quote.totals || typeof quote.totals.grand_total !== 'number' || quote.totals.grand_total <= 0) {
-          throw new Error('Invalid quote data: valid totals are required');
+        // Accept non-negative totals; if missing, default to zeros and continue
+        if (!quote.totals || typeof quote.totals.grand_total !== 'number' || !Number.isFinite(quote.totals.grand_total)) {
+          console.warn('PDF generation warning: totals missing or invalid; defaulting to zeros');
+          (quote as any).totals = {
+            subtotal: 0,
+            discount: 0,
+            freight: 0,
+            tax: 0,
+            grand_total: 0
+          };
         }
         
         // Validate line items
         for (let i = 0; i < quote.line_items.length; i++) {
           const item = quote.line_items[i];
+          if (!item || typeof item !== 'object') {
+            console.warn(`PDF generation warning: line item at index ${i} is invalid; skipping`);
+            continue;
+          }
           if (!item.sku_code || !item.description || typeof item.qty !== 'number' || item.qty <= 0) {
-            throw new Error(`Invalid line item at index ${i}: missing required fields or invalid quantity`);
+            console.warn(`PDF generation warning: line item at index ${i} missing fields or invalid qty; it will be displayed with fallbacks`);
           }
         }
 
@@ -594,18 +608,27 @@ export class PDFGenerationService {
 
   private calculateConfidenceMetrics(quote: Quote): any {
     if (!quote.explainability) return null;
-    
-    const avgProcessingConfidence = quote.explainability.processing_steps.reduce(
-      (sum, step) => sum + step.confidence, 0
-    ) / quote.explainability.processing_steps.length;
-    
-    const mappingConfidences = Object.values(quote.explainability.mapping_confidence);
-    const avgMappingConfidence = mappingConfidences.reduce((sum, conf) => sum + conf, 0) / mappingConfidences.length;
-    
+
+    const steps = Array.isArray(quote.explainability.processing_steps)
+      ? quote.explainability.processing_steps
+      : [];
+    const avgProcessingConfidence = steps.length > 0
+      ? steps.reduce((sum, step) => sum + (Number(step.confidence) || 0), 0) / steps.length
+      : 0;
+
+    const mappingConfValues = quote.explainability.mapping_confidence
+      ? Object.values(quote.explainability.mapping_confidence).map(v => Number(v) || 0)
+      : [];
+    const avgMappingConfidence = mappingConfValues.length > 0
+      ? mappingConfValues.reduce((sum, conf) => sum + conf, 0) / mappingConfValues.length
+      : 0;
+
+    const overall = (avgProcessingConfidence + avgMappingConfidence) / 2;
+
     return {
-      average_processing_confidence: avgProcessingConfidence,
-      average_mapping_confidence: avgMappingConfidence,
-      overall_confidence: (avgProcessingConfidence + avgMappingConfidence) / 2
+      average_processing_confidence: Number.isFinite(avgProcessingConfidence) ? avgProcessingConfidence : 0,
+      average_mapping_confidence: Number.isFinite(avgMappingConfidence) ? avgMappingConfidence : 0,
+      overall_confidence: Number.isFinite(overall) ? overall : 0,
     };
   }
 }
