@@ -246,7 +246,7 @@ export class RFQParsers {
   }
 
   /**
-   * Chat parser - handle JSON structure
+   * Chat parser - handle JSON structure and freeform chat text
    */
   private parseChat(text: string): ParsedLineItem[] {
     const lines: ParsedLineItem[] = [];
@@ -270,13 +270,36 @@ export class RFQParsers {
           };
           lines.push(line);
         }
+      } else if (typeof data.text === 'string' && data.text.trim().length > 0) {
+        // Slack-style payload with a 'text' field
+        return this.parseChatText(data.text);
       }
     } catch (error) {
-      // If not JSON, treat as plain text
-      return this.parseEmail(text);
+      // Not JSON - treat as freeform chat text
+      return this.parseChatText(text);
     }
 
     return lines;
+  }
+
+  /**
+   * Parse freeform chat text by splitting into segments and applying product line parsing
+   */
+  private parseChatText(message: string): ParsedLineItem[] {
+    const results: ParsedLineItem[] = [];
+    if (!message || typeof message !== 'string') return results;
+
+    // Normalize common separators: commas and the word 'and'
+    const normalized = message
+      .replace(/\s+and\s+/gi, ',')
+      .replace(/[\u201C\u201D]/g, '"'); // smart quotes to straight quotes
+
+    const parts = normalized.split(',').map(p => p.trim()).filter(Boolean);
+    for (const part of parts) {
+      const parsed = this.parseProductLine(part);
+      if (parsed) results.push(parsed);
+    }
+    return results;
   }
 
   /**

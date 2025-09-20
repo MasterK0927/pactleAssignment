@@ -67,6 +67,8 @@ app.post('/api/credits/purchase/complete', express.json(), async (req, res) => {
   }
 });
 
+// (moved explainability endpoint below, after service initialization)
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.text({ limit: '10mb' }));
 
@@ -943,7 +945,7 @@ app.get('/api/quotes/:quoteId/export/tax-csv', authMiddleware.authenticate, asyn
   }
 });
 
-// Export explainability JSON
+// Explainability JSON endpoint (serves structured JSON, not HTML)
 app.get('/api/quotes/:quoteId/explainability', authMiddleware.authenticate, async (req: AuthenticatedRequest, res) => {
   try {
     const { quoteId } = req.params;
@@ -953,57 +955,15 @@ app.get('/api/quotes/:quoteId/explainability', authMiddleware.authenticate, asyn
       return res.status(404).json({ error: 'Quote not found' });
     }
 
-    // Add sample explainability data
-    const enhancedQuote = {
-      ...quote,
-      explainability: {
-        processing_steps: [
-          {
-            step: 'RFQ Parsing',
-            description: 'Successfully parsed RFQ items from input text',
-            confidence: 0.95,
-            details: { items_found: quote.line_items.length }
-          },
-          {
-            step: 'SKU Mapping',
-            description: 'Mapped items to catalog SKUs using fuzzy matching',
-            confidence: 0.87,
-            details: { mapping_algorithm: 'Levenshtein + Semantic' }
-          },
-          {
-            step: 'Price Calculation',
-            description: 'Applied pricing rules and calculated totals',
-            confidence: 0.92,
-            details: { base_pricing: 'catalog', adjustments: [] }
-          }
-        ],
-        mapping_confidence: quote.line_items.reduce((acc, item) => {
-          acc[item.sku_code] = Math.random() * 0.3 + 0.7; // Random confidence between 0.7-1.0
-          return acc;
-        }, {} as { [key: string]: number }),
-        pricing_logic: {
-          base_pricing: 'Catalog pricing with volume discounts',
-          adjustments: [
-            { factor: 'Volume Discount', impact: -5, reason: 'Order quantity > 100 units' },
-            { factor: 'Market Adjustment', impact: 2, reason: 'Current market conditions' }
-          ]
-        }
-      }
-    };
+    const jsonText = await pdfGenerationService.generateExplainabilityJSON(quote as any);
+    const data = JSON.parse(jsonText);
 
-    const explainabilityJSON = await pdfGenerationService.generateExplainabilityJSON(enhancedQuote as any);
-    
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="explainability-${quoteId}.json"`);
-    res.send(explainabilityJSON);
+    return res.status(200).json(data);
   } catch (error: any) {
-    console.error('Explainability export error:', error);
+    console.error('Explainability JSON error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    res.status(500).json({ 
-      error: 'Explainability export failed', 
-      details: errorMessage,
-      quote_id: req.params.quoteId 
-    });
+    return res.status(500).json({ error: 'Explainability generation failed', details: errorMessage, quote_id: req.params.quoteId });
   }
 });
 
