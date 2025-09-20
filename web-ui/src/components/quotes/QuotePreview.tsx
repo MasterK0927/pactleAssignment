@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config/api';
 import { Download, Eye, FileText, Database, BarChart3, AlertCircle, CheckCircle, Info } from 'lucide-react';
 
 interface Quote {
@@ -77,14 +78,29 @@ export const QuotePreview: React.FC<QuotePreviewProps> = ({ quoteId, onClose }) 
     try {
       setLoading(true);
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/quotes/${quoteId}/preview`, {
+      const endpoint = getApiUrl(`/api/quotes/${quoteId}/preview`);
+      const response = await fetch(endpoint, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch preview data');
+        // Try to read JSON error; if not JSON, read text to surface HTML fallback issues
+        const ct = response.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const err = await response.json().catch(() => ({} as any));
+          throw new Error(err?.error || err?.details || `Failed to fetch preview data (${response.status})`);
+        } else {
+          const text = await response.text();
+          throw new Error(`Failed to fetch preview data (${response.status}). Received non-JSON response.`);
+        }
+      }
+
+      const ct = response.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        const text = await response.text();
+        throw new Error('Preview API returned non-JSON response');
       }
 
       const data = await response.json();
