@@ -28,10 +28,28 @@ export class RFQParsers {
   private database: Database;
   private inMemoryCache = new Map<string, ParseResult>(); // Fallback cache
   private runIdCache = new Map<string, ParseResult>(); // Fallback run ID cache
+  // Soft limits for parsing to avoid blocking requests on huge inputs
+  private static readonly MAX_CSV_ROWS = 2000; // process at most 2000 data rows
+  private static readonly DB_TIMEOUT_MS = 500; // fast timeout for DB touches
 
   constructor() {
     this.rfqRepository = new PostgreSQLRFQRepository();
     this.database = Database.getInstance();
+  }
+
+  /**
+   * Utility to guard any awaited call with a timeout to keep request responsive
+   */
+  private async withTimeout<T>(promise: Promise<T>, ms: number, label?: string): Promise<T> {
+    return await Promise.race<T>([
+      promise,
+      new Promise<T>((_, reject) => {
+        const id = setTimeout(() => {
+          clearTimeout(id);
+          reject(new Error(`${label || 'operation'} timed out in ${ms}ms`));
+        }, ms);
+      }) as Promise<T>,
+    ]);
   }
 
   /**
@@ -76,9 +94,17 @@ export class RFQParsers {
     // Check cache (database first, then in-memory fallback)
     let existingResult = null;
     try {
-      const isConnected = await this.database.isConnected();
+      const isConnected = await this.withTimeout(
+        this.database.isConnected(),
+        RFQParsers.DB_TIMEOUT_MS,
+        'db:isConnected'
+      ).catch(() => false);
       if (isConnected) {
-        existingResult = await this.rfqRepository.getParseResultByIdempotencyKey(idempotencyKey);
+        existingResult = await this.withTimeout(
+          this.rfqRepository.getParseResultByIdempotencyKey(idempotencyKey),
+          RFQParsers.DB_TIMEOUT_MS,
+          'repo:getParseResultByIdempotencyKey'
+        ).catch(() => null);
       }
     } catch (error) {
       console.warn('Database check failed, using in-memory cache:', error instanceof Error ? error.message : 'Unknown error');
@@ -110,7 +136,7 @@ export class RFQParsers {
           parsedLines = this.parseChat(content);
           break;
         case 'csv':
-          parsedLines = this.parseCSV(content);
+          parsedLines = this.parseCSV(content, warnings);
           break;
         default:
           throw new Error(`Unsupported type: ${params.type}`);
@@ -137,16 +163,24 @@ export class RFQParsers {
 
     // Store in database if available, otherwise use in-memory cache
     try {
-      const isConnected = await this.database.isConnected();
+      const isConnected = await this.withTimeout(
+        this.database.isConnected(),
+        RFQParsers.DB_TIMEOUT_MS,
+        'db:isConnected'
+      ).catch(() => false);
       if (isConnected) {
-        await this.rfqRepository.storeParseResult(result, {
-          userId: params.user_id,
-          buyerId: params.buyer_id,
-          type: params.type,
-          originalContent: content,
-          idempotencyKey,
-          processingTimeMs
-        });
+        await this.withTimeout(
+          this.rfqRepository.storeParseResult(result, {
+            userId: params.user_id,
+            buyerId: params.buyer_id,
+            type: params.type,
+            originalContent: content,
+            idempotencyKey,
+            processingTimeMs
+          }),
+          RFQParsers.DB_TIMEOUT_MS,
+          'repo:storeParseResult'
+        );
         console.log(`Stored result in PostgreSQL with runId: ${runId}`);
       } else {
         throw new Error('Database not available');
@@ -248,7 +282,7 @@ export class RFQParsers {
   /**
    * CSV parser - improved column mapping and error handling
    */
-  private parseCSV(content: string): ParsedLineItem[] {
+  private parseCSV(content: string, warnings?: string[]): ParsedLineItem[] {
     const lines: ParsedLineItem[] = [];
 
     try {
@@ -300,7 +334,15 @@ export class RFQParsers {
         throw new Error('CSV must have a description/item column or at least one column with data');
       }
 
-      for (let i = 1; i < rows.length; i++) {
+      // Enforce a maximum number of data rows to keep parsing bounded
+      const maxDataRows = RFQParsers.MAX_CSV_ROWS;
+      const totalDataRows = rows.length - 1;
+      const effectiveEnd = 1 + Math.min(totalDataRows, maxDataRows);
+      if (totalDataRows > maxDataRows) {
+        warnings?.push(`Input truncated: processed first ${maxDataRows} rows out of ${totalDataRows}. Please split the file and try again for the remaining rows.`);
+      }
+
+      for (let i = 1; i < effectiveEnd; i++) {
         const values = this.parseCSVRow(rows[i]);
 
         // Try to read description; if missing, rebuild from all non-empty string fragments
@@ -572,9 +614,17 @@ export class RFQParsers {
 
     // Try database first
     try {
-      const isConnected = await this.database.isConnected();
+      const isConnected = await this.withTimeout(
+        this.database.isConnected(),
+        RFQParsers.DB_TIMEOUT_MS,
+        'db:isConnected'
+      ).catch(() => false);
       if (isConnected) {
-        const result = await this.rfqRepository.getParseResultByRunId(runId);
+        const result = await this.withTimeout(
+          this.rfqRepository.getParseResultByRunId(runId),
+          RFQParsers.DB_TIMEOUT_MS,
+          'repo:getParseResultByRunId'
+        ).catch(() => null);
         if (result) {
           console.log(`Found run in database: ${runId}`);
           return result;

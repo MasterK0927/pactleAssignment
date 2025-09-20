@@ -342,6 +342,10 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
             
             <button
               onClick={async () => {
+                if (!quote.line_items || quote.line_items.length === 0) {
+                  alert('This quote has no line items to export. Please review the RFQ/mapping and generate again.');
+                  return;
+                }
                 try {
                   const token = localStorage.getItem('access_token');
                   if (!token) {
@@ -383,6 +387,7 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
               <span>Download Enhanced PDF</span>
             </button>
 
+            {quote.line_items && quote.line_items.length > 0 && (
             <button
               onClick={async () => {
                 try {
@@ -425,7 +430,9 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
               <BarChart3 className="h-4 w-4" />
               <span>Export CSV</span>
             </button>
+            )}
 
+            {quote.line_items && quote.line_items.length > 0 && (
             <button
               onClick={async () => {
                 try {
@@ -468,6 +475,7 @@ export const QuoteOutput: React.FC<QuoteOutputProps> = ({ quote, loading }) => {
               <TrendingUp className="h-4 w-4" />
               <span>Explainability Data</span>
             </button>
+            )}
           </div>
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">

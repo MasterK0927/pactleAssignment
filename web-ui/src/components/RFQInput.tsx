@@ -112,6 +112,12 @@ export const RFQInput: React.FC<RFQInputProps> = ({ setQuote, setLoading, onCred
 
   const handleFileSelect = useCallback((file: File) => {
     if (file && (file.type === 'text/csv' || file.name.endsWith('.csv') || file.name.endsWith('.txt'))) {
+      // 10MB guard to match backend limit
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('File is too large. Please upload a file smaller than 10MB.');
+        return;
+      }
       setSelectedFile(file);
       setFileName(file.name);
 
@@ -290,15 +296,33 @@ export const RFQInput: React.FC<RFQInputProps> = ({ setQuote, setLoading, onCred
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(getApiUrl(apiConfig.endpoints.rfq.parse), {
-      method: 'POST',
-      headers,
-      body: formData
-    });
+    // Retry once for transient timeouts/gateway errors
+    const doRequest = async (): Promise<Response> => {
+      const resp = await fetch(getApiUrl(apiConfig.endpoints.rfq.parse), {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+      return resp;
+    };
+
+    let response = await doRequest();
+    if (!response.ok && [408, 504, 502].includes(response.status)) {
+      // small backoff and retry once
+      await new Promise(r => setTimeout(r, 500));
+      response = await doRequest();
+    }
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Parse failed');
+      // attempt to parse json; fallback to text
+      let errMsg = 'Parse failed';
+      try {
+        const error = await response.json();
+        errMsg = error.error || errMsg;
+      } catch {
+        try { errMsg = await response.text(); } catch {}
+      }
+      throw new Error(errMsg);
     }
 
     return { data: await response.json() };
@@ -364,9 +388,16 @@ export const RFQInput: React.FC<RFQInputProps> = ({ setQuote, setLoading, onCred
 
   const downloadPDF = async () => {
     const currentQuoteId = quoteIdByType[inputType];
+    const currentQuote = quotesByType[inputType];
     if (!currentQuoteId) {
       console.error('No quote ID available for PDF download');
       alert('No quote available to download');
+      return;
+    }
+
+    // Guard: ensure there are line items to export
+    if (!currentQuote || !currentQuote.line_items || currentQuote.line_items.length === 0) {
+      alert('This quote has no line items to export. Please review your RFQ or mapping settings and generate the quote again.');
       return;
     }
 
@@ -568,6 +599,26 @@ export const RFQInput: React.FC<RFQInputProps> = ({ setQuote, setLoading, onCred
         </Card>
       )}
 
+      {/* Parse Warnings */}
+      {processingResultsByType[inputType]?.warnings?.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-amber-800 flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5" />
+              <span>Parsing Warnings</span>
+            </CardTitle>
+            <CardDescription className="text-amber-700">Some issues were detected while reading your RFQ</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc pl-5 text-sm text-amber-800 space-y-1">
+              {processingResultsByType[inputType].warnings.map((w: string, idx: number) => (
+                <li key={`warn-${idx}`}>{w}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Input Area */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -663,7 +714,7 @@ export const RFQInput: React.FC<RFQInputProps> = ({ setQuote, setLoading, onCred
           <FileText className="mr-2 h-4 w-4" />
           Load Sample
         </Button>
-        {quoteIdByType[inputType] && (
+        {quoteIdByType[inputType] && (quotesByType[inputType]?.line_items?.length || 0) > 0 && (
           <Button variant="outline" onClick={downloadPDF}>
             <Download className="mr-2 h-4 w-4" />
             Download PDF

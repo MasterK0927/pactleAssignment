@@ -136,6 +136,11 @@ export class QuoteCreationService {
       .sort((a, b) => a.sku_code.localeCompare(b.sku_code))
       .map((item, idx) => ({ ...item, line_no: idx + 1 }));
 
+    // Guard: Do not create quotes without any line items
+    if (!lineItems || lineItems.length === 0) {
+      throw new Error('No quotable line items were generated from RFQ mapping. Please review your RFQ content or mapping thresholds/aliases.');
+    }
+
     // Calculate totals
     const subtotal = lineItems.reduce((sum, item) => sum + item.line_total, 0);
     const discount = subtotal * (request.header_discount_pct / 100);
