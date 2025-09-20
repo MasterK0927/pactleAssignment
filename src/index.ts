@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import multer from 'multer';
 import * as dotenv from 'dotenv';
 import { ValidationError, SKUMappingError, PricingError } from './domain/common/errors';
@@ -87,6 +88,9 @@ const exportService = new ExportService();
 const previewService = new PreviewService();
 const creditsService = CreditsService.getInstance();
 
+// In-memory ERP sync store for idempotency testing
+const erpSyncStore = new Map<string, { erp_order_id: string; created_at: string }>();
+
 console.log('Credits service initialized (PostgreSQL backend)');
 
 database.testConnection().then(isConnected => {
@@ -108,6 +112,43 @@ app.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     version: '1.0.1',
   });
+});
+
+// ERP Sync (stub): Accepts a quote and idempotency_key, returns a fake ERP order id
+app.post('/erp/quotes', authMiddleware.authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { idempotency_key, quote } = req.body || {};
+
+    if (!idempotency_key || !quote) {
+      return res.status(400).json({ error: 'idempotency_key and quote are required' });
+    }
+
+    // Idempotent behavior: if we have seen this key, return the same ERP order id
+    const existing = erpSyncStore.get(idempotency_key);
+    if (existing) {
+      return res.status(200).json({ status: 'ok', erp_order_id: existing.erp_order_id, idempotency_key });
+    }
+
+    // Optional: verify that idempotency_key == sha256(quote JSON). If mismatch, only warn.
+    try {
+      const serialized = JSON.stringify(quote);
+      const computed = crypto.createHash('sha256').update(serialized).digest('hex');
+      if (computed !== idempotency_key) {
+        console.warn('[ERP SYNC] Provided idempotency_key does not match SHA-256 of quote payload');
+      }
+    } catch (e) {
+      console.warn('[ERP SYNC] Failed to compute SHA-256 of quote payload:', e instanceof Error ? e.message : 'Unknown');
+    }
+
+    // Generate a fake ERP order id
+    const erp_order_id = `ERP-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+    erpSyncStore.set(idempotency_key, { erp_order_id, created_at: new Date().toISOString() });
+
+    return res.status(201).json({ status: 'ok', erp_order_id, idempotency_key });
+  } catch (error: any) {
+    console.error('ERP Sync stub error:', error);
+    res.status(500).json({ error: error.message || 'ERP sync failed' });
+  }
 });
 
 app.post('/api/auth/signup', async (req, res) => {
@@ -196,9 +237,20 @@ app.post('/api/auth/refresh', async (req, res) => {
 
 app.post('/api/rfqs/parse', authMiddleware.authenticate, upload.single('file'), async (req: AuthenticatedRequest, res) => {
   try {
-    const { type, buyer_id, idempotency_key } = req.body;
-    let text = req.body.text;
+    let { type, buyer_id, idempotency_key } = req.body || {};
+    let text = req.body?.text as string | undefined;
 
+    // Auto-detect and normalize chat-style JSON payloads (e.g. Slack)
+    // Accept shapes like: { channel: 'slack', text: '...' }
+    // If type is missing but text exists, assume 'chat'.
+    if ((!type || !['email', 'chat', 'csv'].includes(type)) && typeof req.body === 'object') {
+      if (typeof req.body.text === 'string' && req.body.text.trim().length > 0) {
+        type = 'chat';
+        text = req.body.text;
+      }
+    }
+
+    // Validate type after normalization
     if (!type || !['email', 'chat', 'csv'].includes(type)) {
       return res.status(400).json({ error: 'Type must be one of: email, chat, csv' });
     }
